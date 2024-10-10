@@ -14,8 +14,8 @@ CREATE TABLE self_contrib_record (
     chat_id bigint NOT NULL,
     amount int NOT NULL,
     PRIMARY KEY (user_id, ts),
-    FOREIGN KEY (sd_user) REFERENCES sd_user (id),
-    FOREIGN KEY (chat) REFERENCES chat (id)
+    FOREIGN KEY (user_id) REFERENCES sd_user (id),
+    FOREIGN KEY (chat_id) REFERENCES chat (id)
 );
 
 CREATE INDEX idx_self_contrib_record_chat_id on self_contrib_record ("chat_id");

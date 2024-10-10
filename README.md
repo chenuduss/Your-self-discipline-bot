@@ -16,7 +16,7 @@
 ## Запуск
 
 
-    python3 ysdb.py --host 127.0.0.1 --db ysdb_db2 --user postgres --password **** --bot_token *****
+    python3 src/ysdb.py --conf test/conf.json
 
 
 

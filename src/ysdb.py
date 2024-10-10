@@ -3,6 +3,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import argparse
 from db_worker import DbWorkerService
 import logging
+import json
 
 class YSDBot:
     def __init__(self, db_worker:DbWorkerService):
@@ -30,22 +31,46 @@ class YSDBot:
         result = ch.effective_name
         if (len(result) < 1):
             result = "@"+str(ch.id)
-        return result    
+        return result  
+
+    @staticmethod
+    def ParsePushMessage(msg:str) -> int:
+        parts = msg.strip().split(" ", 1)
+        second_part = parts[1].strip()
+        koeff = 1
+        if second_part[-1] in ['k', 'K', 'к', 'К']:
+            second_part = second_part[:-1]
+            koeff = 1000
+        return int(second_part)*koeff
+
 
     async def push(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        logging.info("[STAT] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat))    
+        logging.info("[PUSH] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat) + ", text: "+update.message.text)    
 
         self.Db.EnsureUserExists(update.effective_user.id, YSDBot.MakeUserTitle(update.effective_user))
         self.Db.EnsureChatExists(update.effective_chat.id, YSDBot.MakeChatTitle(update.effective_chat))
 
-        await update.message.reply_text(f'push {update.effective_user.first_name}!')
+        amount = 0
+        try:
+            amount = YSDBot.ParsePushMessage(update.message.text)
+        except BaseException as ex:
+            logging.error("[PUSH] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat) + ", text: "+update.message.text + ". EXCEPTION: "+str(ex))       
+
+        if amount < 1:
+            await update.message.reply_text("Меньше одного символа пушить нельзя") 
+        if amount > 100000:
+            await update.message.reply_text("Больше 100k пушить нельзя")     
+            
+        self.Db.InsertSelfContribRecord(update.effective_user.id, update.effective_chat.id, amount)
+
+        await update.message.reply_text("Сохранено "+str(amount)+" символов. \n\nПоследние 5 записей:") 
 
     async def pop(self,update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        logging.info("[STAT] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat))    
+        logging.info("[POP] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat))    
         await update.message.reply_text(f'pop {update.effective_user.first_name}!')    
 
     async def mystat(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        logging.info("[STAT] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat))    
+        logging.info("[MYSTAT] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat))    
         await update.message.reply_text(f'mystat {update.effective_user.first_name}!')    
 
     async def stat(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:        
@@ -67,26 +92,20 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
     parser = argparse.ArgumentParser(
-        prog = 'YSDB', description = '''Your self-discipline bot''', epilog = '''(c) 2024''')
+        prog = 'YSDB', description = '''Your self-discipline bot''', epilog = '''(c) 2024''')   
 
-    parser.add_argument ('--host', dest='host', action="store", type=str, required=True)
-    parser.add_argument ('--port', dest='port', action="store", type=str, default=5432, type=int)
-    parser.add_argument ('--db', dest='db', action="store", type=str, required=True)
-    parser.add_argument ('--user', dest='user', action="store", type=str, required=True)
-    parser.add_argument ('--password', dest='password', action="store", type=str, required=True)
-    parser.add_argument ('--bot_token', dest='bot_token', action="store", type=str, required=True)
+
+    parser.add_argument ('--conf', dest='conf', action="store", type=str, required=True)
 
     args = parser.parse_args()
 
-    db = DbWorkerService({
-        'host': args.host,
-        'port': args.port,
-        'db': args.db,
-        'username': args.user,
-        'password': args.password
-    })
+    
+    with open(args.conf, 'r') as file:
+        conf = json.load(file)
 
-    app = ApplicationBuilder().token(args.bot_token).build()
+    db = DbWorkerService(conf['db'])
+
+    app = ApplicationBuilder().token(conf['bot_token']).build()
 
     bot = YSDBot(db)
 

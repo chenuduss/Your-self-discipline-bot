@@ -1,0 +1,10 @@
+{
+    "db": {
+        "host": "127.0.0.1",
+        "port": 5432,
+        "db": "ysdb_db2",
+        "username": "postgres",
+        "password": "1qaz2wsx3edc"
+    },
+    "bot_token": "7694651318:AAGsCIDTAqTCXcNRrVKaCKYc6XNwfgUvx4I"
+}

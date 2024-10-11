@@ -2,6 +2,12 @@
 
 Бот: @your_self_discipline_bot
 
+## Подготовка системы
+
+    apt install postgresql
+    apt install build-essential autoconf libtool pkg-config 
+    apt install libpq-dev
+
 ## БД
     
 Создание:

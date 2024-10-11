@@ -59,6 +59,12 @@ class DbWorkerService:
         connection.commit() 
 
     @ConnectionPool    
+    def DeleteLastSelfContribRecords(self, user_id:int, chat_id:int, limit:int, connection=None) -> None:
+        ps_cursor = connection.cursor() 
+        ps_cursor.execute("DELETE FROM self_contrib_record WHERE user_id = %s AND chat_id = %s ORDER BY ts DESC LIMIT %s", (user_id, chat_id, limit)) 
+        connection.commit()         
+
+    @ConnectionPool    
     def SelectLastUserSelfContribs(self, user_id:int, chat_id:int, limit:int,  connection=None) -> list[ChatRelatedUserSelfContrib]:
         ps_cursor = connection.cursor()          
         ps_cursor.execute("SELECT ts, amount FROM self_contrib_record WHERE user_id = %s AND chat_id = %s ORDER BY ts DESC LIMIT %s", (user_id, chat_id, limit))        
@@ -99,4 +105,5 @@ class DbWorkerService:
             return rows[0][0]
         elif len(rows) > 1:
             raise YSDBException("corrupted DB table")
-        return 0    
+        return 0
+

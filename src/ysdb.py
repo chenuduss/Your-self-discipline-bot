@@ -121,7 +121,16 @@ class YSDBot:
             return
         self.LastHandledPopCommand = time.time()
 
-        await update.message.reply_text(f'pop {update.effective_user.first_name}!')    
+        try:
+            self.Db.DeleteLastSelfContribRecords(update.effective_user.id, update.effective_chat.id, 1)
+            reply_message = "Выполнена попытка удаления последней записи.\n\n"+self.MakeLastPushingInfoBlock(update.effective_user.id, update.effective_chat.id)
+            await update.message.reply_text(reply_message) 
+        except YSDBException as ex:
+            await update.message.reply_text("Ошибка!\n\n"+str(ex)) 
+        except BaseException as ex:    
+            logging.error("[PUSH] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat) + ", text: "+update.message.text + ". EXCEPTION: "+str(ex))       
+            await update.message.reply_text("Ошибка при выполнении команды: "+str(ex))
+           
 
     async def mystat(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         logging.info("[MYSTAT] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat))    
@@ -161,24 +170,49 @@ class YSDBot:
 
         try:
             stat_message = "Это чат " + YSDBot.MakeChatTitle(update.effective_chat) + "\n\n"
-
+            stat_message += "здесь будет стата по юзерам"
                      
 
             await update.message.reply_text(stat_message)     
         except YSDBException as ex:
             await update.message.reply_text("Ошибка!\n\n"+str(ex)) 
         except BaseException as ex:    
-            logging.error("[MYSTAT] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat) + ", text: "+update.message.text + ". EXCEPTION: "+str(ex))       
+            logging.error("[STAT] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat) + ", text: "+update.message.text + ". EXCEPTION: "+str(ex))       
             await update.message.reply_text("Ошибка при выполнении команды: "+str(ex))  
+
+    async def top(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:        
+        logging.info("[TOP] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat))    
+        if time.time() - self.LastHandledStatCommand < self.StatCommandMinimunInterval:
+            logging.warning("[TOP] Ignore command from user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat))                
+            return
+        self.LastHandledStatCommand = time.time()
+
+        try:
+            stat_message = "Это чат " + YSDBot.MakeChatTitle(update.effective_chat) + "\n\n"
+            stat_message += "здесь будет ТОП по юзерам"
+                     
+
+            await update.message.reply_text(stat_message)     
+        except YSDBException as ex:
+            await update.message.reply_text("Ошибка!\n\n"+str(ex)) 
+        except BaseException as ex:    
+            logging.error("[TOP] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat) + ", text: "+update.message.text + ". EXCEPTION: "+str(ex))       
+            await update.message.reply_text("Ошибка при выполнении команды: "+str(ex))              
 
     @staticmethod
     def get_help() -> str:
         result = "Команды: "
         result +="\n* Моя статиcтика: /mystat"
-        result +="\n*Добавление знаков: /push <количеcтво знаков>"
+        result +="\n* Добавление знаков: /push <количеcтво знаков>"
         result +="\n** Примеры:"
         result +="\n** /push 190"
         result +="\n** /push 5k"
+        result +="\n* Удаление последней записи о знаках: /pop"        
+        result +="\n* Топ юзеров за период: /top <кол-во дней>"
+        result +="\n** Примеры:"
+        result +="\n** /top 15"
+        result +="\n** /top"
+        result +="\n** Значение по-умолчанию: 7"
 
         return result
 
@@ -223,6 +257,7 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler("pop", bot.pop))
     app.add_handler(CommandHandler("mystat", bot.mystat))
     app.add_handler(CommandHandler("stat", bot.stat))
+    app.add_handler(CommandHandler("top", bot.top))
 
     app.run_polling()
 

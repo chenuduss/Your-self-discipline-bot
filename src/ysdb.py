@@ -170,7 +170,17 @@ class YSDBot:
         except BaseException as ex:    
             logging.error("[MYSTAT] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat) + ", text: "+update.message.text + ". EXCEPTION: "+str(ex))       
             await update.message.reply_text("Ошибка при выполнении команды: "+str(ex))  
-       
+
+    @staticmethod
+    def get_help() -> str:
+        result = "Команды: "
+        result +="\n* Моя статиcтика: /mystat"
+        result +="\n*Добавление знаков: /push <количетво знаков>"
+        result +="\n** Примеры:"
+        result +="\n** /push 190"
+        result +="\n** /push 5k"
+
+        return result
 
     async def status(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         ut = YSDBot.GetUserTitleForLog(update.effective_user)
@@ -180,6 +190,8 @@ class YSDBot:
         uptime_sec = time.time() - self.StartTS
         uptime = timedelta(seconds = uptime_sec)
         status_msg +="\nАптайм "+ str(uptime)
+        status_msg += "\n\n"+ YSDBot.get_help()
+
         #status_msg +="\nВерсия "+ str(uptime)
         await update.message.reply_text(status_msg)
 
@@ -213,3 +225,4 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler("stat", bot.stat))
 
     app.run_polling()
+

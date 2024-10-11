@@ -4,7 +4,7 @@
         "port": 5432,
         "db": "ysdb_db2",
         "username": "postgres",
-        "password": "1qaz2wsx3edc"
+        "password": "****"
     },
     "bot_token": "*****"
 }

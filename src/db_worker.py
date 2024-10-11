@@ -61,7 +61,14 @@ class DbWorkerService:
     @ConnectionPool    
     def DeleteLastSelfContribRecords(self, user_id:int, chat_id:int, limit:int, connection=None) -> None:
         ps_cursor = connection.cursor() 
-        ps_cursor.execute("DELETE FROM self_contrib_record WHERE user_id = %s AND chat_id = %s ORDER BY ts DESC LIMIT %s", (user_id, chat_id, limit)) 
+
+        ps_cursor.execute("SELECT ts FROM self_contrib_record WHERE user_id = %s AND chat_id = %s ORDER BY ts DESC LIMIT %s", (user_id, chat_id, limit))        
+        rows = ps_cursor.fetchall()                
+        if len(rows) < 1:
+            return
+        
+        row = rows[-1]
+        ps_cursor.execute("DELETE FROM self_contrib_record WHERE user_id = %s AND chat_id = %s AND ts >= %s", (user_id, chat_id, row[0])) 
         connection.commit()         
 
     @ConnectionPool    

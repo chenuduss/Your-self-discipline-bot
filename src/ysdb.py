@@ -12,6 +12,8 @@ from zoneinfo import ZoneInfo
 def MakeHumanReadableAmount(value:int) -> str: 
     if value > 1000:
         return str(round(float(value)/1000.0, 1))+"k" 
+    if value > 1000000:
+        return str(round(float(value)/1000000.0, 2))+"M" 
         
     return str(value)
 

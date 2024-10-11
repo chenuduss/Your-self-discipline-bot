@@ -112,7 +112,7 @@ class YSDBot:
         return result
     
     def MakeTopBlock(self, chat_id:int, day_count:int) -> str:
-        result = "TOP за последние "+str(day_count)+" дней:\n"
+        result = "TОП за последние "+str(day_count)+" дней:\n"
 
         top = self.Db.GetTop(chat_id, datetime.now() - timedelta(days=day_count), datetime.now())
         
@@ -250,6 +250,11 @@ class YSDBot:
 
         try:
             day_count = YSDBot.ParseTopParams(update.message.text) or 7
+            if day_count < 2:
+                raise YSDBException("Топ меньше чем за 2 дня считать нельзя")            
+            if day_count > 180:
+                raise YSDBException("Топ больше чем за 180 дней считать нельзя")
+            
             stat_message = "Это чат " + YSDBot.MakeChatTitle(update.effective_chat)
             stat_message += "\n\n"+self.MakeTopBlock(update.effective_chat.id, day_count)
                      
@@ -266,14 +271,14 @@ class YSDBot:
         result = "Команды: "
         result +="\n📈 Моя статиcтика: /mystat [full]"        
         result +="\n➕ Добавление знаков: /push <количеcтво знаков>"
-        result +="\n🔘 Примеры:"
-        result +="\n🔘▫️ /push 190"
-        result +="\n🔘▫️ /push 5k"
+        result +="\n❕ Примеры:"
+        result +="\n❕▫️ /push 190"
+        result +="\n❕▫️ /push 5k"
         result +="\n❌ Удаление последней записи о знаках: /pop yes"
         result +="\n🏆 Топ юзеров за период: /top [<кол-во дней>]"
-        result +="\n🔘 Примеры:"
-        result +="\n🔘▫️ /top 15"
-        result +="\n🔘▫️ /top"
+        result +="\n❕ Примеры:"
+        result +="\n❕▫️ /top 15"
+        result +="\n❕▫️ /top"
         result +="\n🔘 Значение по-умолчанию: 7"
 
         return result
@@ -293,8 +298,7 @@ class YSDBot:
 
 
 if __name__ == '__main__':
-
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+    logging.basicConfig(level=logging.WARNING, format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
     parser = argparse.ArgumentParser(
         prog = 'YSDB', description = '''Your self-discipline bot''', epilog = '''(c) 2024''')   

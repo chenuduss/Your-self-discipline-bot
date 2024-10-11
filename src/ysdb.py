@@ -168,7 +168,7 @@ class YSDBot:
 
         try:
             stat_message = "Привет, " + YSDBot.MakeUserTitle(update.effective_user) + "!\n\n"
-            stat_message += self.MakeLastPushingInfoBlock(update.effective_user.id, update.effective_chat.id, 5)
+            stat_message += self.MakeLastPushingInfoBlock(update.effective_user.id, update.effective_chat.id, 10 if full else 5)
 
             stat_message += "\n"
             stat_message += "\nЗа последние сутки: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=1), datetime.now()))

@@ -69,20 +69,29 @@ class YSDBot:
     def MakeLastPushingInfo(self, user_id:int, chat_id:int, count:int) -> str:
         user_contribs = self.Db.SelectLastUserSelfContribs(user_id, chat_id, count)
         result = ""
-        cc = 0
+        cc = 1
         for uc in user_contribs:
-            if cc > 0:
+            if cc > 1:
                 result += "\n"
 
             result += "№"+str(cc) +" " + uc.TS.strftime("%d.%m.%Y %H:%M")+": "+MakeHumanReadableAmount(uc.Amount)
             cc += 1
 
         return result
+    
+    def MakeShortStatBlock(self, user_id:int, chat_id:int) -> str:
+        result = "Количество за сутки: " + MakeHumanReadableAmount(self.Db.GetAmountSum(user_id, chat_id, datetime.now() - timedelta(days=1), datetime.now()))
+        result += "\nКоличество за неделю: " + MakeHumanReadableAmount(self.Db.GetAmountSum(user_id, chat_id, datetime.now() - timedelta(days=7), datetime.now()))
+        return result
 
-    def MakeLastPushingInfoBlock(self, user_id:int, chat_id:int) -> str:
-        result = "Последние 5 записей:\n"
+    def MakeLastPushingInfoBlock(self, user_id:int, chat_id:int, count:int) -> str:
+        
 
-        return result+self.MakeLastPushingInfo(user_id, chat_id, 5)
+        result = "Последние записи:\n"
+
+        result += self.MakeLastPushingInfo(user_id, chat_id, count)
+
+        return result
 
     async def push(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         logging.info("[PUSH] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat) + ", text: "+update.message.text)    
@@ -104,7 +113,9 @@ class YSDBot:
             
             self.Db.InsertSelfContribRecord(update.effective_user.id, update.effective_chat.id, amount)
 
-            reply_message = "Сохранено "+MakeHumanReadableAmount(amount)+" символов. \n\n"+self.MakeLastPushingInfoBlock(update.effective_user.id, update.effective_chat.id)
+            reply_message = "Сохранено "+MakeHumanReadableAmount(amount)+" символов."
+            reply_message += "\n\n"+self.MakeShortStatBlock(update.effective_user.id, update.effective_chat.id)
+            #reply_message += "\n\n"+self.MakeLastPushingInfoBlock(update.effective_user.id, update.effective_chat.id, 3)
 
             await update.message.reply_text(reply_message) 
         except YSDBException as ex:
@@ -122,7 +133,10 @@ class YSDBot:
         self.LastHandledPopCommand = time.time()
 
         if not update.message.text.strip().lower().endswith("yes"):
-            await update.message.reply_text("Чтобы выполнить операцию, введите команду вручную:\n\n/pop yes") 
+            reply_message = "Чтобы выполнить операцию, введите команду вручную:\n\n/pop yes"
+            reply_message += "\n\n"+self.MakeLastPushingInfoBlock(update.effective_user.id, update.effective_chat.id, 5)
+            await update.message.reply_text(reply_message) 
+
             return
 
         try:
@@ -145,11 +159,11 @@ class YSDBot:
 
         try:
             stat_message = "Привет, " + YSDBot.MakeUserTitle(update.effective_user) + "!\n\n"
-            stat_message += self.MakeLastPushingInfoBlock(update.effective_user.id, update.effective_chat.id)
+            stat_message += self.MakeLastPushingInfoBlock(update.effective_user.id, update.effective_chat.id, 5)
 
             stat_message += "\n"
             stat_message += "\nЗа последние сутки: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=1), datetime.now()))
-            stat_message += "\nЗа последние 3 суток: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=3), datetime.now()))
+            #stat_message += "\nЗа последние 3 суток: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=3), datetime.now()))
             stat_message += "\nЗа последние 7 суток: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=7), datetime.now()))
             stat_message += "\nЗа последние 15 суток: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=15), datetime.now()))
             stat_message += "\nЗа последние 30 суток: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=30), datetime.now()))

@@ -143,10 +143,10 @@ class YSDBot:
 
             if amount < 1:
                 raise YSDBException("Меньше одного символа пушить нельзя") 
-            if amount > 100000:
-                raise YSDBException("Больше 100k пушить нельзя")
+            if amount > 80000:
+                raise YSDBException("Больше 80k пушить нельзя")
             current_day_counter = self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=1), datetime.now())     
-            if current_day_counter > 200000:
+            if current_day_counter > 100000:
                 raise YSDBException("Мне кажется, что ты за сегодня уже много написал. Тебе надо бы отдохнуть")
             
             self.Db.InsertSelfContribRecord(update.effective_user.id, update.effective_chat.id, amount)

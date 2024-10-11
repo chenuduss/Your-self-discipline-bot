@@ -121,6 +121,10 @@ class YSDBot:
             return
         self.LastHandledPopCommand = time.time()
 
+        if not update.message.text.strip().lower().endswith("yes"):
+            await update.message.reply_text("Чтобы выполнить операцию, введите команду вручную /pop yes") 
+            return
+
         try:
             self.Db.DeleteLastSelfContribRecords(update.effective_user.id, update.effective_chat.id, 1)
             reply_message = "Выполнена попытка удаления последней записи.\n\n"+self.MakeLastPushingInfoBlock(update.effective_user.id, update.effective_chat.id)
@@ -207,7 +211,7 @@ class YSDBot:
         result +="\n** Примеры:"
         result +="\n** /push 190"
         result +="\n** /push 5k"
-        result +="\n* Удаление последней записи о знаках: /pop"        
+        result +="\n* Удаление последней записи о знаках: /pop yes"
         result +="\n* Топ юзеров за период: /top <кол-во дней>"
         result +="\n** Примеры:"
         result +="\n** /top 15"

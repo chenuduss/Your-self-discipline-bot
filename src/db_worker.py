@@ -21,6 +21,11 @@ class ChatRelatedUserSelfContrib:
         self.TS = ts
         self.Amount = amount
 
+class ChatTopItem:
+    def __init__(self, title:str, amount:int):
+        self.Title = title
+        self.Amount = amount        
+
 class DbWorkerService:   
     def __init__(self, config:dict):
         psycopg2.extras.register_uuid()
@@ -115,4 +120,24 @@ class DbWorkerService:
         elif len(rows) > 1:
             raise YSDBException("corrupted DB table")
         return 0
+
+    @ConnectionPool    
+    def GetTop(self, chat_id:int, start_ts:datetime, end_ts:datetime, connection=None) -> list[ChatTopItem]:
+        ps_cursor = connection.cursor() 
+        query = "SELECT u.id, u.title, sum(scr.amount) "
+        query+= "FROM self_contrib_record as scr INNER JOIN sd_user as u ON scr.user_id = u.id "
+        query+= "WHERE ts >= %s AND ts <= %s AND chat_id = %s "
+        query+= "GROUP BY u.id ORDER BY sum(scr.amount) DESC LIMIT 30 OFFSET 0"
+        ps_cursor.execute(query, (start_ts, end_ts, chat_id))
+        rows = ps_cursor.fetchall() 
+        result = []
+        for row in rows:
+            result.append(ChatTopItem(row[1], row[2]))
+
+        return result    
+
+
+
+
+
 

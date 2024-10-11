@@ -64,7 +64,17 @@ class YSDBot:
             return int(second_part)*koeff
         except BaseException as ex:
             raise YSDBException("Некорректный формат команды /push")     
-        
+
+    @staticmethod
+    def ParseTopParams(msg:str) -> int|None:
+        try:
+            parts = msg.strip().split(" ", 1)
+            if len(parts) < 2:
+                return None
+            second_part = parts[1].strip()
+            return int(second_part)
+        except BaseException as ex:
+            raise YSDBException("Некорректный формат команды /top")         
 
     @staticmethod
     def ParseMyStatType(msg:str) -> str:
@@ -98,6 +108,24 @@ class YSDBot:
         result += self.MakeLastPushingInfo(user_id, chat_id, count)
 
         return result
+    
+    def MakeTopBlock(self, chat_id:int, day_count:int) -> str:
+        result = "TOP за последние "+str(day_count)+" дней:\n"
+
+        top = self.Db.GetTop(chat_id, datetime.now() - timedelta(days=day_count), datetime.now())
+
+        result = ""
+        cc = 1
+        for item in top:
+            if cc > 1:
+                result += "\n"
+
+            result += "№"+str(cc) +" " + item.Title+" : "+MakeHumanReadableAmount(item.Amount)
+            cc += 1
+
+        return result        
+
+        return result    
 
     async def push(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         logging.info("[PUSH] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat) + ", text: "+update.message.text)    
@@ -217,8 +245,9 @@ class YSDBot:
         self.LastHandledStatCommand = time.time()
 
         try:
-            stat_message = "Это чат " + YSDBot.MakeChatTitle(update.effective_chat) + "\n\n"
-            stat_message += "здесь будет ТОП по юзерам"
+            day_count = YSDBot.ParseTopParams(update.message.text) or 7
+            stat_message = "Это чат " + YSDBot.MakeChatTitle(update.effective_chat)
+            stat_message += "\n\n"+self.MakeTopBlock(update.effective_chat.id, day_count)
                      
 
             await update.message.reply_text(stat_message)     

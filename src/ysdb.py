@@ -175,7 +175,7 @@ class YSDBot:
     def get_help() -> str:
         result = "Команды: "
         result +="\n* Моя статиcтика: /mystat"
-        result +="\n*Добавление знаков: /push <количетво знаков>"
+        result +="\n*Добавление знаков: /push <количеcтво знаков>"
         result +="\n** Примеры:"
         result +="\n** /push 190"
         result +="\n** /push 5k"

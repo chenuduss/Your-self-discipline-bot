@@ -82,7 +82,7 @@ class YSDBot:
             if cc > 1:
                 result += "\n"
 
-            result += "№"+str(cc) +" " + uc.TS.astimezone(ZoneInfo('Europe/Moscow')).strftime("%d.%m.%Y %H:%M")+" 📓 "+MakeHumanReadableAmount(uc.Amount)
+            result += "№"+str(cc) +" " + uc.TS.strftime("%d.%m.%Y %H:%M")+" 📓 "+MakeHumanReadableAmount(uc.Amount)
             cc += 1
 
         return result

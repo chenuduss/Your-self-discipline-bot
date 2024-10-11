@@ -122,7 +122,7 @@ class YSDBot:
         self.LastHandledPopCommand = time.time()
 
         if not update.message.text.strip().lower().endswith("yes"):
-            await update.message.reply_text("Чтобы выполнить операцию, введите команду вручную /pop yes") 
+            await update.message.reply_text("Чтобы выполнить операцию, введите команду вручную:\n\n/pop yes") 
             return
 
         try:

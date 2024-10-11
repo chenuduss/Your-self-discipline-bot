@@ -64,7 +64,15 @@ class YSDBot:
             return int(second_part)*koeff
         except BaseException as ex:
             raise YSDBException("Некорректный формат команды /push")     
+        
 
+    @staticmethod
+    def ParseMyStatType(msg:str) -> str:
+        try:
+            parts = msg.strip().split(" ", 1)            
+            return parts[1].strip().lower()
+        except BaseException as ex:
+            return ""
 
     def MakeLastPushingInfo(self, user_id:int, chat_id:int, count:int) -> str:
         user_contribs = self.Db.SelectLastUserSelfContribs(user_id, chat_id, count)
@@ -85,8 +93,6 @@ class YSDBot:
         return result
 
     def MakeLastPushingInfoBlock(self, user_id:int, chat_id:int, count:int) -> str:
-        
-
         result = "Последние записи:\n"
 
         result += self.MakeLastPushingInfo(user_id, chat_id, count)
@@ -157,6 +163,9 @@ class YSDBot:
             return
         self.LastHandledMyStatCommand = time.time()
 
+        t = YSDBot.ParseMyStatType(update.message.text)
+        full = (t == "full")
+
         try:
             stat_message = "Привет, " + YSDBot.MakeUserTitle(update.effective_user) + "!\n\n"
             stat_message += self.MakeLastPushingInfoBlock(update.effective_user.id, update.effective_chat.id, 5)
@@ -165,9 +174,11 @@ class YSDBot:
             stat_message += "\nЗа последние сутки: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=1), datetime.now()))
             #stat_message += "\nЗа последние 3 суток: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=3), datetime.now()))
             stat_message += "\nЗа последние 7 суток: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=7), datetime.now()))
-            stat_message += "\nЗа последние 15 суток: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=15), datetime.now()))
+            if full:
+                stat_message += "\nЗа последние 15 суток: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=15), datetime.now()))
             stat_message += "\nЗа последние 30 суток: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=30), datetime.now()))
-            stat_message += "\nЗа всё время: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=3600), datetime.now()))
+            if full:
+                stat_message += "\nЗа всё время: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=3600), datetime.now()))
 
             if update.effective_user.id == update.effective_chat.id:
                 stat_message += "\n\n((Тут будет статистика по всем чатам))"
@@ -220,13 +231,13 @@ class YSDBot:
     @staticmethod
     def get_help() -> str:
         result = "Команды: "
-        result +="\n* Моя статиcтика: /mystat"
+        result +="\n* Моя статиcтика: /mystat [full]"        
         result +="\n* Добавление знаков: /push <количеcтво знаков>"
         result +="\n** Примеры:"
         result +="\n** /push 190"
         result +="\n** /push 5k"
         result +="\n* Удаление последней записи о знаках: /pop yes"
-        result +="\n* Топ юзеров за период: /top <кол-во дней>"
+        result +="\n* Топ юзеров за период: /top [<кол-во дней>]"
         result +="\n** Примеры:"
         result +="\n** /top 15"
         result +="\n** /top"

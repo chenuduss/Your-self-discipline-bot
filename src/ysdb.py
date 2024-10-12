@@ -87,26 +87,41 @@ class YSDBot:
             raise YSDBException("Некорректный формат команды /push")     
 
     @staticmethod
-    def ParseTopParams(msg:str) -> int|None:
+    def ParseTopParamsAndValidate(msg:str) -> int:
+        result = None
         try:
             parts = msg.strip().split(" ", 1)
             if len(parts) < 2:
-                return None
-            second_part = parts[1].strip()
-            return int(second_part)
-        except BaseException as ex:
-            raise YSDBException("Некорректный формат команды /top")
-               
-    @staticmethod
-    def ParseStatParams(msg:str) -> int|None:
-        try:
-            parts = msg.strip().split(" ", 1)
-            if len(parts) < 2:
-                return None
-            second_part = parts[1].strip()
-            return int(second_part)
+                return 7
+            else:
+                second_part = parts[1].strip()
+                result = int(second_part)
         except BaseException as ex:
             raise YSDBException("Некорректный формат команды /stat")    
+        
+        if result < 2:
+            raise YSDBException("🚫 Топ меньше чем за 2 дня считать нельзя")            
+        if result > 180:
+            raise YSDBException("🚫 Топ больше чем за 180 дней считать нельзя") 
+        return result
+               
+    @staticmethod
+    def ParseStatParamsAndValidate(msg:str) -> int:
+
+        result = None
+        try:
+            parts = msg.strip().split(" ", 1)
+            if len(parts) < 2:
+                return 7
+            else:
+                second_part = parts[1].strip()
+                result = int(second_part)
+        except BaseException as ex:
+            raise YSDBException("Некорректный формат команды /stat")    
+        
+        if result < 2:
+            raise YSDBException("🚫 Стаститику меньше, чем за 1 день считать нельзя") 
+        return result
 
     @staticmethod
     def ParseMyStatType(msg:str) -> str:
@@ -269,8 +284,7 @@ class YSDBot:
             return
 
         try:
-            day_count = YSDBot.ParseStatParams(update.message.text) or 7
-
+            day_count = YSDBot.ParseStatParamsAndValidate(update.message.text)            
             stat_message = "📊 Статистика за "+str(day_count)+" дней (чат " + YSDBot.MakeChatTitle(update.effective_chat) + ")\n"
             stat_message += "\nКоличество знаков по всем пользователям: "+MakeHumanReadableAmount(self.Db.GetChatAmountSum(update.effective_chat.id, datetime.now() - timedelta(days=day_count), datetime.now()))
             stat_message += "\nПишуших участников: "+str(self.Db.GetChatActiveUserCount(update.effective_chat.id, datetime.now() - timedelta(days=day_count), datetime.now()))         
@@ -290,14 +304,8 @@ class YSDBot:
         self.LastHandledStatCommand = time.time()
 
         try:
-            day_count = YSDBot.ParseTopParams(update.message.text) or 7
-            if day_count < 2:
-                raise YSDBException("🚫 Топ меньше чем за 2 дня считать нельзя")            
-            if day_count > 180:
-                raise YSDBException("🚫 Топ больше чем за 180 дней считать нельзя")            
-            
+            day_count = YSDBot.ParseTopParamsAndValidate(update.message.text)
             stat_message = self.MakeTopBlock(update.effective_chat.id, day_count)
-
             #stat_message+= "\n\nДанные по чату: " + YSDBot.MakeChatTitle(update.effective_chat)         
 
             await update.message.reply_text(stat_message)     

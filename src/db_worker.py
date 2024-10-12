@@ -112,7 +112,7 @@ class DbWorkerService:
     def GetChatAmountSum(self, chat_id:int, start_ts:datetime, end_ts:datetime, connection=None) -> int:
         ps_cursor = connection.cursor()          
         ps_cursor.execute(
-            "SELECT sum(amount) FROM self_contrib_record WHERE AND chat_id = %s AND ts >= %s AND ts <= %s", 
+            "SELECT sum(amount) FROM self_contrib_record WHERE chat_id = %s AND ts >= %s AND ts <= %s", 
             (chat_id, start_ts, end_ts))        
         rows = ps_cursor.fetchall()    
         if len(rows) == 1:            
@@ -120,6 +120,19 @@ class DbWorkerService:
         elif len(rows) > 1:
             raise YSDBException("corrupted DB table")
         return 0
+    
+    @ConnectionPool    
+    def GetChatActiveUserCount(self, chat_id:int, start_ts:datetime, end_ts:datetime, connection=None) -> int:
+        ps_cursor = connection.cursor()          
+        ps_cursor.execute(
+            "SELECT COUNT(user_id) FROM self_contrib_record WHERE chat_id = %s AND ts >= %s AND ts <= %s GROUP BY chat_id", 
+            (chat_id, start_ts, end_ts))        
+        rows = ps_cursor.fetchall()    
+        if len(rows) == 1:            
+            return rows[0][0] or 0
+        elif len(rows) > 1:
+            raise YSDBException("corrupted DB table")
+        return 0    
 
     @ConnectionPool    
     def GetTop(self, chat_id:int, start_ts:datetime, end_ts:datetime, connection=None) -> list[ChatTopItem]:

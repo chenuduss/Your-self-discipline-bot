@@ -105,14 +105,14 @@ class YSDBot:
         return result
 
     def MakeLastPushingInfoBlock(self, user_id:int, chat_id:int, count:int) -> str:
-        result = "Последние записи:\n"
+        result = "📑 Последние записи:\n"
 
         result += self.MakeLastPushingInfo(user_id, chat_id, count)
 
         return result
     
     def MakeTopBlock(self, chat_id:int, day_count:int) -> str:
-        result = "TОП за последние "+str(day_count)+" дней:\n"
+        result = "🏆 TОП за последние "+str(day_count)+" дней:\n"
 
         top = self.Db.GetTop(chat_id, datetime.now() - timedelta(days=day_count), datetime.now())
         
@@ -126,7 +126,13 @@ class YSDBot:
 
         return result        
 
-        return result    
+    @staticmethod
+    def MakeErrorMessage(ex: YSDBException) -> str:
+        return "⛔️ Ошибка!\n\n"+str(ex)
+    
+    @staticmethod
+    def MakeExternalErrorMessage(ex: BaseException) -> str:
+        return "❗️ Ошибка при выполнении команды: "+str(ex)
 
     async def push(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         logging.info("[PUSH] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat) + ", text: "+update.message.text)    
@@ -157,10 +163,10 @@ class YSDBot:
 
             await update.message.reply_text(reply_message) 
         except YSDBException as ex:
-            await update.message.reply_text("⚠️ Ошибка!\n\n"+str(ex)) 
+            await update.message.reply_text(YSDBot.MakeErrorMessage(ex)) 
         except BaseException as ex:    
             logging.error("[PUSH] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat) + ", text: "+update.message.text + ". EXCEPTION: "+str(ex))       
-            await update.message.reply_text("❗️ Ошибка при выполнении команды: "+str(ex))
+            await update.message.reply_text(YSDBot.MakeExternalErrorMessage(ex))
     
 
     async def pop(self,update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -171,7 +177,7 @@ class YSDBot:
         self.LastHandledPopCommand = time.time()
 
         if not update.message.text.strip().lower().endswith("yes"):
-            reply_message = "Чтобы выполнить операцию, введите команду вручную:\n\n/pop yes"
+            reply_message = "⚠️ Чтобы выполнить операцию, введите команду вручную:\n\n/pop yes"
             reply_message += "\n\n"+self.MakeLastPushingInfoBlock(update.effective_user.id, update.effective_chat.id, 5)
             await update.message.reply_text(reply_message) 
 
@@ -179,13 +185,13 @@ class YSDBot:
 
         try:
             self.Db.DeleteLastSelfContribRecords(update.effective_user.id, update.effective_chat.id, 1)
-            reply_message = "Выполнена попытка удаления последней записи.\n\n"+self.MakeLastPushingInfoBlock(update.effective_user.id, update.effective_chat.id, 5)
+            reply_message = "☑️ Выполнена попытка удаления последней записи.\n\n"+self.MakeLastPushingInfoBlock(update.effective_user.id, update.effective_chat.id, 5)
             await update.message.reply_text(reply_message) 
         except YSDBException as ex:
-            await update.message.reply_text("Ошибка!\n\n"+str(ex)) 
+            await update.message.reply_text(YSDBot.MakeErrorMessage(ex)) 
         except BaseException as ex:    
             logging.error("[PUSH] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat) + ", text: "+update.message.text + ". EXCEPTION: "+str(ex))       
-            await update.message.reply_text("Ошибка при выполнении команды: "+str(ex))
+            await update.message.reply_text(YSDBot.MakeExternalErrorMessage(ex))
            
 
     async def mystat(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -202,7 +208,7 @@ class YSDBot:
             stat_message = "Привет, " + YSDBot.MakeUserTitle(update.effective_user) + "!\n\n"
             stat_message += self.MakeLastPushingInfoBlock(update.effective_user.id, update.effective_chat.id, 10 if full else 5)
 
-            stat_message += "\n"
+            stat_message += "\n📊 Данные по знакам"
             stat_message += "\nЗа последние сутки: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=1), datetime.now()))
             #stat_message += "\nЗа последние 3 суток: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=3), datetime.now()))
             stat_message += "\nЗа последние 7 суток: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=7), datetime.now()))
@@ -217,10 +223,10 @@ class YSDBot:
 
             await update.message.reply_text(stat_message)     
         except YSDBException as ex:
-            await update.message.reply_text("⚠️ Ошибка!\n\n"+str(ex)) 
+            await update.message.reply_text(YSDBot.MakeErrorMessage(ex)) 
         except BaseException as ex:    
             logging.error("[MYSTAT] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat) + ", text: "+update.message.text + ". EXCEPTION: "+str(ex))       
-            await update.message.reply_text("Ошибка при выполнении команды: "+str(ex))  
+            await update.message.reply_text(YSDBot.MakeExternalErrorMessage(ex))  
 
     async def stat(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:        
         logging.info("[STAT] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat))    
@@ -236,10 +242,10 @@ class YSDBot:
 
             await update.message.reply_text(stat_message)     
         except YSDBException as ex:
-            await update.message.reply_text("Ошибка!\n\n"+str(ex)) 
+            await update.message.reply_text(YSDBot.MakeErrorMessage(ex)) 
         except BaseException as ex:    
             logging.error("[STAT] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat) + ", text: "+update.message.text + ". EXCEPTION: "+str(ex))       
-            await update.message.reply_text("Ошибка при выполнении команды: "+str(ex))  
+            await update.message.reply_text(YSDBot.MakeExternalErrorMessage(ex))  
 
     async def top(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:        
         logging.info("[TOP] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat))    
@@ -251,20 +257,20 @@ class YSDBot:
         try:
             day_count = YSDBot.ParseTopParams(update.message.text) or 7
             if day_count < 2:
-                raise YSDBException("Топ меньше чем за 2 дня считать нельзя")            
+                raise YSDBException("🚫 Топ меньше чем за 2 дня считать нельзя")            
             if day_count > 180:
-                raise YSDBException("Топ больше чем за 180 дней считать нельзя")
+                raise YSDBException("🚫 Топ больше чем за 180 дней считать нельзя")            
             
-            stat_message = "Это чат " + YSDBot.MakeChatTitle(update.effective_chat)
-            stat_message += "\n\n"+self.MakeTopBlock(update.effective_chat.id, day_count)
-                     
+            stat_message = self.MakeTopBlock(update.effective_chat.id, day_count)
+
+            #stat_message+= "\n\nДанные по чату: " + YSDBot.MakeChatTitle(update.effective_chat)         
 
             await update.message.reply_text(stat_message)     
         except YSDBException as ex:
-            await update.message.reply_text("⚠️ Ошибка!\n\n"+str(ex)) 
+            await update.message.reply_text(YSDBot.MakeErrorMessage(ex)) 
         except BaseException as ex:    
             logging.error("[TOP] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat) + ", text: "+update.message.text + ". EXCEPTION: "+str(ex))       
-            await update.message.reply_text("Ошибка при выполнении команды: "+str(ex))              
+            await update.message.reply_text(YSDBot.MakeExternalErrorMessage(ex))              
 
     @staticmethod
     def get_help() -> str:

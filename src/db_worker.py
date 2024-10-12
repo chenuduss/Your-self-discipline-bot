@@ -125,7 +125,7 @@ class DbWorkerService:
     def GetChatActiveUserCount(self, chat_id:int, start_ts:datetime, end_ts:datetime, connection=None) -> int:
         ps_cursor = connection.cursor()          
         ps_cursor.execute(
-            "SELECT COUNT(user_id) FROM self_contrib_record WHERE chat_id = %s AND ts >= %s AND ts <= %s GROUP BY chat_id", 
+            "SELECT COUNT(DISTINCT user_id) FROM self_contrib_record WHERE chat_id = %s AND ts >= %s AND ts <= %s GROUP BY chat_id", 
             (chat_id, start_ts, end_ts))        
         rows = ps_cursor.fetchall()    
         if len(rows) == 1:            

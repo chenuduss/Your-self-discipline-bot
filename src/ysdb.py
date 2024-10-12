@@ -76,7 +76,18 @@ class YSDBot:
             second_part = parts[1].strip()
             return int(second_part)
         except BaseException as ex:
-            raise YSDBException("Некорректный формат команды /top")         
+            raise YSDBException("Некорректный формат команды /top")
+               
+    @staticmethod
+    def ParseStatParams(msg:str) -> int|None:
+        try:
+            parts = msg.strip().split(" ", 1)
+            if len(parts) < 2:
+                return None
+            second_part = parts[1].strip()
+            return int(second_part)
+        except BaseException as ex:
+            raise YSDBException("Некорректный формат команды /stat")    
 
     @staticmethod
     def ParseMyStatType(msg:str) -> str:
@@ -236,10 +247,12 @@ class YSDBot:
         self.LastHandledStatCommand = time.time()
 
         try:
-            stat_message = "Это чат " + YSDBot.MakeChatTitle(update.effective_chat) + "\n\n"
-            stat_message += "здесь будет стата по юзерам"
-                     
+            day_count = YSDBot.ParseStatParams(update.message.text) or 7
 
+            stat_message = "Это чат " + YSDBot.MakeChatTitle(update.effective_chat) + "\n\n"
+            stat_message += "Количество знаков по всем пользователям: "+MakeHumanReadableAmount(self.Db.GetChatAmountSum(update.effective_chat.id, datetime.now() - timedelta(days=day_count), datetime.now()))
+                     
+            stat_message += "ℹ️ Чтобы получить топ по юзерам, введите команду /top (или /top <кол-во дней>, например, /top 25)"
             await update.message.reply_text(stat_message)     
         except YSDBException as ex:
             await update.message.reply_text(YSDBot.MakeErrorMessage(ex)) 

@@ -115,8 +115,8 @@ class DbWorkerService:
             "SELECT sum(amount) FROM self_contrib_record WHERE AND chat_id = %s AND ts >= %s AND ts <= %s", 
             (chat_id, start_ts, end_ts))        
         rows = ps_cursor.fetchall()    
-        if len(rows) == 1:
-            return rows[0][0]
+        if len(rows) == 1:            
+            return rows[0][0] or 0
         elif len(rows) > 1:
             raise YSDBException("corrupted DB table")
         return 0

@@ -179,7 +179,7 @@ class YSDBot:
 
         try:
             self.Db.DeleteLastSelfContribRecords(update.effective_user.id, update.effective_chat.id, 1)
-            reply_message = "Выполнена попытка удаления последней записи.\n\n"+self.MakeLastPushingInfoBlock(update.effective_user.id, update.effective_chat.id)
+            reply_message = "Выполнена попытка удаления последней записи.\n\n"+self.MakeLastPushingInfoBlock(update.effective_user.id, update.effective_chat.id, 5)
             await update.message.reply_text(reply_message) 
         except YSDBException as ex:
             await update.message.reply_text("Ошибка!\n\n"+str(ex)) 

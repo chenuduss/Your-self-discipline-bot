@@ -208,7 +208,7 @@ class YSDBot:
             stat_message = "Привет, " + YSDBot.MakeUserTitle(update.effective_user) + "!\n\n"
             stat_message += self.MakeLastPushingInfoBlock(update.effective_user.id, update.effective_chat.id, 10 if full else 5)
 
-            stat_message += "\n📊 Данные по знакам"
+            stat_message += "\n\n📊 Данные по знакам"
             stat_message += "\nЗа последние сутки: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=1), datetime.now()))
             #stat_message += "\nЗа последние 3 суток: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=3), datetime.now()))
             stat_message += "\nЗа последние 7 суток: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=7), datetime.now()))

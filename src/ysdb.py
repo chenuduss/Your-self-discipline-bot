@@ -271,7 +271,7 @@ class YSDBot:
         try:
             day_count = YSDBot.ParseStatParams(update.message.text) or 7
 
-            stat_message = "📊 Статистика за "+str(day_count)+"дней (чат " + YSDBot.MakeChatTitle(update.effective_chat) + ")\n"
+            stat_message = "📊 Статистика за "+str(day_count)+" дней (чат " + YSDBot.MakeChatTitle(update.effective_chat) + ")\n"
             stat_message += "\nКоличество знаков по всем пользователям: "+MakeHumanReadableAmount(self.Db.GetChatAmountSum(update.effective_chat.id, datetime.now() - timedelta(days=day_count), datetime.now()))
             stat_message += "\nПишуших участников: "+str(self.Db.GetChatActiveUserCount(update.effective_chat.id, datetime.now() - timedelta(days=day_count), datetime.now()))         
             stat_message += "\n\nℹ️ Чтобы получить топ по юзерам, введите команду /top (или /top <кол-во дней>, например, /top 25)"

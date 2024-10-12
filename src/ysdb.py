@@ -32,6 +32,8 @@ class CommandLimits:
             if t - self.ChatLimits[chat_id] < self.ChatMinimumInterval: 
                 return True
             self.ChatLimits[chat_id] = t
+        else:
+            self.ChatLimits[chat_id] = t    
         
         self.LastHandledStatCommand = t
         return False        
@@ -43,8 +45,8 @@ class YSDBot:
         
         self.PushLimits = CommandLimits(0.3, 0.5)
         self.PopLimits = CommandLimits(0.4, 1.0)
-        self.MyStatLimits = CommandLimits(0.8, 1.25)
-        self.StatLimits = CommandLimits(2, 3)      
+        self.MyStatLimits = CommandLimits(0.7, 1.25)
+        self.StatLimits = CommandLimits(1, 3)      
         
 
     @staticmethod

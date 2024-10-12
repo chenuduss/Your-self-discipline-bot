@@ -17,18 +17,35 @@ def MakeHumanReadableAmount(value:int) -> str:
         
     return str(value)
 
+class CommandLimits:
+    def __init__(self, global_min_inteval:float, chat_min_inteval:float):
+        self.GlobalMinimumInterval = global_min_inteval
+        self.ChatMinimumInterval = chat_min_inteval
+        self.ChatLimits:dict[int, float] = {}
+        self.LastHandled = time.time()
+
+    def Check(self, user_id:int, chat_id:int) -> bool:
+        t = time.time() 
+        if t - self.LastHandled < self.GlobalMinimumInterval:            
+            return True
+        if chat_id in self.ChatLimits:
+            if t - self.ChatLimits[chat_id] < self.ChatMinimumInterval: 
+                return True
+            self.ChatLimits[chat_id] = t
+        
+        self.LastHandledStatCommand = t
+        return False        
+
 class YSDBot:
     def __init__(self, db_worker:DbWorkerService):
         self.Db = db_worker
         self.StartTS = int(time.time())
-        self.LastHandledPushCommand = time.time()
-        self.PushCommandMinimunInterval = 0.8
-        self.LastHandledPopCommand = time.time()
-        self.PopCommandMinimunInterval = 1.5
-        self.LastHandledMyStatCommand = time.time()
-        self.MyStatCommandMinimunInterval = 5
-        self.LastHandledStatCommand = time.time()
-        self.StatCommandMinimunInterval = 10
+        
+        self.PushLimits = CommandLimits(0.3, 0.5)
+        self.PopLimits = CommandLimits(0.4, 1.0)
+        self.MyStatLimits = CommandLimits(0.8, 1.25)
+        self.StatLimits = CommandLimits(2, 3)      
+        
 
     @staticmethod
     def GetUserTitleForLog(user:User) -> str:
@@ -147,7 +164,7 @@ class YSDBot:
 
     async def push(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         logging.info("[PUSH] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat) + ", text: "+update.message.text)    
-        if time.time() - self.LastHandledPushCommand < self.PushCommandMinimunInterval:
+        if self.PushLimits.Check(update.effective_user.id, update.effective_chat.id):
             logging.warning("[PUSH] Ignore command from user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat) + ", text: "+update.message.text)
             return
         self.LastHandledPushCommand = time.time()
@@ -182,7 +199,7 @@ class YSDBot:
 
     async def pop(self,update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         logging.info("[POP] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat)+ ", text: "+update.message.text)    
-        if time.time() - self.LastHandledPopCommand < self.PopCommandMinimunInterval:
+        if self.PopLimits.Check(update.effective_user.id, update.effective_chat.id):
             logging.warning("[POP] Ignore command from user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat)+ ", text: "+update.message.text)
             return
         self.LastHandledPopCommand = time.time()
@@ -207,7 +224,7 @@ class YSDBot:
 
     async def mystat(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         logging.info("[MYSTAT] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat))    
-        if time.time() - self.LastHandledMyStatCommand < self.MyStatCommandMinimunInterval:
+        if self.MyStatLimits.Check(update.effective_user.id, update.effective_chat.id):
             logging.warning("[MYSTAT] Ignore command from user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat))        
             return
         self.LastHandledMyStatCommand = time.time()
@@ -237,19 +254,22 @@ class YSDBot:
             await update.message.reply_text(YSDBot.MakeErrorMessage(ex)) 
         except BaseException as ex:    
             logging.error("[MYSTAT] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat) + ", text: "+update.message.text + ". EXCEPTION: "+str(ex))       
-            await update.message.reply_text(YSDBot.MakeExternalErrorMessage(ex))  
+            await update.message.reply_text(YSDBot.MakeExternalErrorMessage(ex))
+
+
+
+    
 
     async def stat(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:        
         logging.info("[STAT] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat))    
-        if time.time() - self.LastHandledStatCommand < self.StatCommandMinimunInterval:
+        if self.StatLimits.Check(update.effective_user.id, update.effective_chat.id):
             logging.warning("[STAT] Ignore command from user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat))                
             return
-        self.LastHandledStatCommand = time.time()
 
         try:
             day_count = YSDBot.ParseStatParams(update.message.text) or 7
 
-            stat_message = "Это чат " + YSDBot.MakeChatTitle(update.effective_chat) + "\n"
+            stat_message = "📊 Статистика за "+str(day_count)+"дней (чат " + YSDBot.MakeChatTitle(update.effective_chat) + ")\n"
             stat_message += "\nКоличество знаков по всем пользователям: "+MakeHumanReadableAmount(self.Db.GetChatAmountSum(update.effective_chat.id, datetime.now() - timedelta(days=day_count), datetime.now()))
             stat_message += "\nПишуших участников: "+str(self.Db.GetChatActiveUserCount(update.effective_chat.id, datetime.now() - timedelta(days=day_count), datetime.now()))         
             stat_message += "\n\nℹ️ Чтобы получить топ по юзерам, введите команду /top (или /top <кол-во дней>, например, /top 25)"
@@ -262,7 +282,7 @@ class YSDBot:
 
     async def top(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:        
         logging.info("[TOP] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat))    
-        if time.time() - self.LastHandledStatCommand < self.StatCommandMinimunInterval:
+        if self.StatLimits.Check(update.effective_user.id, update.effective_chat.id):
             logging.warning("[TOP] Ignore command from user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat))                
             return
         self.LastHandledStatCommand = time.time()

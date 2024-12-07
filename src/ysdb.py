@@ -286,8 +286,10 @@ class YSDBot:
         try:
             day_count = YSDBot.ParseStatParamsAndValidate(update.message.text)            
             stat_message = "📊 Статистика за "+str(day_count)+" дней (чат " + YSDBot.MakeChatTitle(update.effective_chat) + ")\n"
-            stat_message += "\nКоличество знаков по всем пользователям: "+MakeHumanReadableAmount(self.Db.GetChatAmountSum(update.effective_chat.id, datetime.now() - timedelta(days=day_count), datetime.now()))
-            stat_message += "\nПишуших участников: "+str(self.Db.GetChatActiveUserCount(update.effective_chat.id, datetime.now() - timedelta(days=day_count), datetime.now()))         
+            total_amount = self.Db.GetChatAmountSum(update.effective_chat.id, datetime.now() - timedelta(days=day_count), datetime.now())
+            stat_message += "\nКоличество знаков по всем пользователям: "+MakeHumanReadableAmount(total_amount)
+            stat_message += "\nВ среднем за сутки: " + MakeHumanReadableAmount(total_amount/day_count)                     
+            stat_message += "\nПишуших участников: "+str(self.Db.GetChatActiveUserCount(update.effective_chat.id, datetime.now() - timedelta(days=day_count), datetime.now()))                     
             stat_message += "\n\nℹ️ Чтобы получить топ по юзерам, введите команду /top (или /top <кол-во дней>, например, /top 25)"
             await update.message.reply_text(stat_message)     
         except YSDBException as ex:

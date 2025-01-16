@@ -9,11 +9,11 @@ from datetime import timedelta, datetime
 from ysdb_exception import YSDBException
 from zoneinfo import ZoneInfo
     
-def MakeHumanReadableAmount(value:int) -> str: 
+def MakeHumanReadableAmount(value:int) -> str:     
+    if value > 1000000:
+        return str(round(float(value)/1000000.0, 2))+"M"
     if value > 1000:
         return str(round(float(value)/1000.0, 1))+"k" 
-    if value > 1000000:
-        return str(round(float(value)/1000000.0, 2))+"M" 
         
     return str(value)
 
@@ -97,7 +97,7 @@ class YSDBot:
                 second_part = parts[1].strip()
                 result = int(second_part)
         except BaseException as ex:
-            raise YSDBException("Некорректный формат команды /stat")    
+            raise YSDBException("Некорректный формат команды /top")    
         
         if result < 2:
             raise YSDBException("🚫 Топ меньше чем за 2 дня считать нельзя")            

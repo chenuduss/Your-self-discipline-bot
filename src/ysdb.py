@@ -291,7 +291,7 @@ class YSDBot:
         result += "\nКоличество знаков по всем пользователям: "+MakeHumanReadableAmount(total_amount)        
         day_amount_avg = total_amount/day_count
         result += "\nВ среднем за сутки: " + MakeHumanReadableAmount(day_amount_avg)
-        writer_count = self.Db.GetChatActiveUserCount(chat_id, datetime.now() - timedelta(days=day_count), pend)        
+        writer_count = self.Db.GetChatActiveUserCount(chat_id, pstart, pend)        
         result += f"\nПишуших участников: {writer_count}"
         if writer_count > 0:
             result += "\nВ среднем по участнику за период: " + MakeHumanReadableAmount(total_amount/writer_count)

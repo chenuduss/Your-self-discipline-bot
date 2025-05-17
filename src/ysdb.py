@@ -287,7 +287,7 @@ class YSDBot:
         result = "Период: c "+self.DatetimeToStr(pstart) + " по " +self.DatetimeToStr(pend)
 
         day_count = (pend - pstart).days
-        total_amount = self.Db.GetChatAmountSum(chat_id, datetime.now() - timedelta(days=day_count), pend)
+        total_amount = self.Db.GetChatAmountSum(chat_id, pstart, pend)
         result += "\nКоличество знаков по всем пользователям: "+MakeHumanReadableAmount(total_amount)        
         day_amount_avg = total_amount/day_count
         result += "\nВ среднем за сутки: " + MakeHumanReadableAmount(day_amount_avg)
@@ -308,11 +308,11 @@ class YSDBot:
 
 
         day_count = self.ParseStatParamsAndValidate(update.message.text)            
-        stat_message = f"📊 Статистика за {day_count} дней (чат " + YSDBot.MakeChatTitle(update.effective_chat) + ")\n"
+        stat_message = f"📊 Статистика за {day_count} дней (чат " + YSDBot.MakeChatTitle(update.effective_chat) + ")\n\n"
         current_period_start = datetime.now() - timedelta(days=day_count)
         stat_message += self.GetStatTextByInterval(current_period_start, datetime.now(), update.effective_chat.id)
 
-        stat_message += f"\n\nПредыдущий париод {day_count} дней\n"
+        stat_message += f"\n\nПредыдущий период {day_count} дней\n"
         current_period_end = current_period_start
         current_period_start = current_period_end - timedelta(days=day_count)
         stat_message += self.GetStatTextByInterval(current_period_start, current_period_end, update.effective_chat.id)

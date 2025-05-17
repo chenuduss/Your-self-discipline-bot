@@ -286,7 +286,7 @@ class YSDBot:
     def GetStatTextByInterval(self, pstart:datetime, pend:datetime, chat_id:int) -> str:
         result = "Период: c "+self.DatetimeToStr(pstart) + " по " +self.DatetimeToStr(pend)
 
-        day_count = (pend - pstart).days()
+        day_count = (pend - pstart).days
         total_amount = self.Db.GetChatAmountSum(chat_id, datetime.now() - timedelta(days=day_count), pend)
         result += "\nКоличество знаков по всем пользователям: "+MakeHumanReadableAmount(total_amount)        
         day_amount_avg = total_amount/day_count

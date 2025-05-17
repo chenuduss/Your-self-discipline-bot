@@ -120,7 +120,11 @@ class YSDBot:
             raise YSDBException("Некорректный формат команды /stat")    
         
         if result < 2:
-            raise YSDBException("🚫 Стаститику меньше, чем за 1 день считать нельзя") 
+            raise YSDBException("🚫 Стаститику меньше, чем за 2 дня считать нельзя")
+
+        if result > 180:
+            raise YSDBException("🚫 Стаститику больше, чем за 180 дней считать нельзя") 
+
         return result
 
     @staticmethod
@@ -130,6 +134,10 @@ class YSDBot:
             return parts[1].strip().lower()
         except BaseException as ex:
             return ""
+        
+    @staticmethod
+    def DatetimeToStr(dt:datetime) -> str:
+        return  dt.strftime("%d.%m.%Y %H:%M") 
 
     def MakeLastPushingInfo(self, user_id:int, chat_id:int, count:int) -> str:
         user_contribs = self.Db.SelectLastUserSelfContribs(user_id, chat_id, count)
@@ -139,7 +147,7 @@ class YSDBot:
             if cc > 1:
                 result += "\n"
 
-            result += "№"+str(cc) +" " + uc.TS.strftime("%d.%m.%Y %H:%M")+" 📓 "+MakeHumanReadableAmount(uc.Amount)
+            result += "№"+str(cc) +" " + self.DatetimeToStr(uc.TS)+" 📓 "+MakeHumanReadableAmount(uc.Amount)
             cc += 1
 
         return result
@@ -235,7 +243,7 @@ class YSDBot:
         except YSDBException as ex:
             await update.message.reply_text(YSDBot.MakeErrorMessage(ex)) 
         except BaseException as ex:    
-            logging.error("[PUSH] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat) + ", text: "+update.message.text + ". EXCEPTION: "+str(ex))       
+            logging.error("[POP] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat) + ", text: "+update.message.text + ". EXCEPTION: "+str(ex))       
             await update.message.reply_text(YSDBot.MakeExternalErrorMessage(ex))
            
 
@@ -274,7 +282,21 @@ class YSDBot:
             await update.message.reply_text(YSDBot.MakeExternalErrorMessage(ex))
 
 
+    def GetStatTextByInterval(self, pstart:datetime, pend:datetime, chat_id:int) -> str:
+        result = "Период: c "+self.DatetimeToStr(pstart) + " по " +self.DatetimeToStr(pend)
 
+        day_count = (pend - pstart).days()
+        total_amount = self.Db.GetChatAmountSum(chat_id, datetime.now() - timedelta(days=day_count), pend)
+        result += "\nКоличество знаков по всем пользователям: "+MakeHumanReadableAmount(total_amount)        
+        day_amount_avg = total_amount/day_count
+        result += "\nВ среднем за сутки: " + MakeHumanReadableAmount(day_amount_avg)
+        writer_count = self.Db.GetChatActiveUserCount(chat_id, datetime.now() - timedelta(days=day_count), pend)        
+        result += f"\nПишуших участников: {writer_count}"
+        if writer_count > 0:
+            result += "\nВ среднем по участнику за период: " + MakeHumanReadableAmount(total_amount/writer_count)
+            result += "\nВ среднем по участнику в сутки: " + MakeHumanReadableAmount(day_amount_avg/writer_count)
+            
+        return result
     
 
     async def stat(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:        
@@ -283,20 +305,21 @@ class YSDBot:
             logging.warning("[STAT] Ignore command from user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat))                
             return
 
-        try:
-            day_count = YSDBot.ParseStatParamsAndValidate(update.message.text)            
-            stat_message = "📊 Статистика за "+str(day_count)+" дней (чат " + YSDBot.MakeChatTitle(update.effective_chat) + ")\n"
-            total_amount = self.Db.GetChatAmountSum(update.effective_chat.id, datetime.now() - timedelta(days=day_count), datetime.now())
-            stat_message += "\nКоличество знаков по всем пользователям: "+MakeHumanReadableAmount(total_amount)
-            stat_message += "\nВ среднем за сутки: " + MakeHumanReadableAmount(total_amount/day_count)                     
-            stat_message += "\nПишуших участников: "+str(self.Db.GetChatActiveUserCount(update.effective_chat.id, datetime.now() - timedelta(days=day_count), datetime.now()))                     
-            stat_message += "\n\nℹ️ Чтобы получить топ по юзерам, введите команду /top (или /top <кол-во дней>, например, /top 25)"
-            await update.message.reply_text(stat_message)     
-        except YSDBException as ex:
-            await update.message.reply_text(YSDBot.MakeErrorMessage(ex)) 
-        except BaseException as ex:    
-            logging.error("[STAT] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat) + ", text: "+update.message.text + ". EXCEPTION: "+str(ex))       
-            await update.message.reply_text(YSDBot.MakeExternalErrorMessage(ex))  
+
+        day_count = self.ParseStatParamsAndValidate(update.message.text)            
+        stat_message = f"📊 Статистика за {day_count} дней (чат " + YSDBot.MakeChatTitle(update.effective_chat) + ")\n"
+        current_period_start = datetime.now() - timedelta(days=day_count)
+        stat_message += self.GetStatTextByInterval(current_period_start, datetime.now(), update.effective_chat.id)
+
+        stat_message += f"\n\nПредыдущий париод {day_count} дней\n"
+        current_period_end = current_period_start
+        current_period_start = current_period_end - timedelta(days=day_count)
+        stat_message += self.GetStatTextByInterval(current_period_start, current_period_end, update.effective_chat.id)
+
+        stat_message += "\n\nℹ️ Чтобы получить топ по юзерам, введите команду /top (или /top <кол-во дней>, например, /top 25)"
+
+        await update.message.reply_text(stat_message)     
+
 
     async def top(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:        
         logging.info("[TOP] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat))    
@@ -349,6 +372,28 @@ class YSDBot:
         #status_msg +="\nВерсия "+ str(uptime)
         await update.message.reply_text(status_msg)
 
+    async def error_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        if update is None:
+            logging.warning("Exception: "+ str(context.error))
+        else:    
+            logging.info("Exception: user id "+self.GetUserTitleForLog(update.effective_user)+", chat id "+self.GetChatTitleForLog(update.effective_chat), exc_info=context.error)
+
+        message_text = "impossible case (lol)"
+        if isinstance(context.error, YSDBException): 
+            logging.warning("YSDBException: "+str(context.error))          
+            message_text = self.MakeErrorMessage(context.error)           
+        else:
+            logging.error("EXCEPTION: "+str(context.error))
+            tb_list = traceback.format_exception(None, context.error, context.error.__traceback__)
+            tb_string = "".join(tb_list)
+            logging.warning("Exception traceback:" + tb_string)            
+            message_text = self.MakeExternalErrorMessage(context.error)
+        
+        if update is None:
+            pass
+        else:    
+            await update.message.reply_text(message_text)        
+
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.WARNING, format='%(asctime)s.%(msecs)03d %(levelname)s %(module)s - %(funcName)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
@@ -377,6 +422,7 @@ if __name__ == '__main__':
     app.add_handler(CommandHandler("mystat", bot.mystat))
     app.add_handler(CommandHandler("stat", bot.stat))
     app.add_handler(CommandHandler("top", bot.top))
+    app.add_error_handler(bot.error_handler)
 
     app.run_polling()
 

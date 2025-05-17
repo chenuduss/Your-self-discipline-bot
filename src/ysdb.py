@@ -8,6 +8,7 @@ import time
 from datetime import timedelta, datetime
 from ysdb_exception import YSDBException
 from zoneinfo import ZoneInfo
+import traceback
     
 def MakeHumanReadableAmount(value:int) -> str:     
     if value > 1000000:
@@ -295,7 +296,7 @@ class YSDBot:
         if writer_count > 0:
             result += "\nВ среднем по участнику за период: " + MakeHumanReadableAmount(total_amount/writer_count)
             result += "\nВ среднем по участнику в сутки: " + MakeHumanReadableAmount(day_amount_avg/writer_count)
-            
+
         return result
     
 

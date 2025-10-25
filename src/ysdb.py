@@ -258,29 +258,28 @@ class YSDBot:
         t = YSDBot.ParseMyStatType(update.message.text)
         full = (t == "full")
 
-        try:
-            stat_message = "Привет, " + YSDBot.MakeUserTitle(update.effective_user) + "!\n\n"
-            stat_message += self.MakeLastPushingInfoBlock(update.effective_user.id, update.effective_chat.id, 10 if full else 5)
 
-            stat_message += "\n\n📊 Данные по знакам"
-            stat_message += "\nЗа последние сутки: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=1), datetime.now()))
-            #stat_message += "\nЗа последние 3 суток: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=3), datetime.now()))
-            stat_message += "\nЗа последние 7 суток: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=7), datetime.now()))
-            if full:
-                stat_message += "\nЗа последние 15 суток: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=15), datetime.now()))
-            stat_message += "\nЗа последние 30 суток: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=30), datetime.now()))
-            if full:
-                stat_message += "\nЗа всё время: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=3600), datetime.now()))
+        stat_message = "Привет, " + YSDBot.MakeUserTitle(update.effective_user) + "!\n\n"
+        stat_message += self.MakeLastPushingInfoBlock(update.effective_user.id, update.effective_chat.id, 10 if full else 5)
 
-            if update.effective_user.id == update.effective_chat.id:
-                stat_message += "\n\n((Тут будет статистика по всем чатам))"
+        stat_message += "\n\n📊 Данные по знакам"
+        now_ts =  datetime.now()
+        stat_message += "\nЗа последние сутки: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=1), now_ts))
+        #stat_message += "\nЗа последние 3 суток: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=3), now_ts))
+        stat_message += "\nЗа последние 7 суток: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=7), now_ts))
+        if full:
+            stat_message += "\nЗа последние 15 суток: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=15), now_ts))
+        stat_message += "\nЗа последние 30 суток: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=30), now_ts))
+        month_first_day = now_ts.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        stat_message += "\nЗа текущий месяц: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, month_first_day, datetime.now()))
+        if full:
+            stat_message += "\nЗа всё время: "+MakeHumanReadableAmount(self.Db.GetAmountSum(update.effective_user.id, update.effective_chat.id, datetime.now() - timedelta(days=3600), now_ts))
 
-            await update.message.reply_text(stat_message)     
-        except YSDBException as ex:
-            await update.message.reply_text(YSDBot.MakeErrorMessage(ex)) 
-        except BaseException as ex:    
-            logging.error("[MYSTAT] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat) + ", text: "+update.message.text + ". EXCEPTION: "+str(ex))       
-            await update.message.reply_text(YSDBot.MakeExternalErrorMessage(ex))
+        if update.effective_user.id == update.effective_chat.id:
+            stat_message += "\n\n((Тут будет статистика по всем чатам))"
+
+        await update.message.reply_text(stat_message)     
+
 
 
     def GetStatTextByInterval(self, pstart:datetime, pend:datetime, chat_id:int) -> str:

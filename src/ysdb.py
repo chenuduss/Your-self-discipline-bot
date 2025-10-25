@@ -100,8 +100,8 @@ class YSDBot:
         except BaseException as ex:
             raise YSDBException("Некорректный формат команды /top")    
         
-        if result < 2:
-            raise YSDBException("🚫 Топ меньше чем за 2 дня считать нельзя")            
+        if result < 0:
+            raise YSDBException("🚫 Некорректное значение интервала")
         if result > 180:
             raise YSDBException("🚫 Топ больше чем за 180 дней считать нельзя") 
         return result
@@ -166,9 +166,14 @@ class YSDBot:
         return result
     
     def MakeTopBlock(self, chat_id:int, day_count:int) -> str:
-        result = "🏆 TОП за последние "+str(day_count)+" дней:\n"
+        if day_count == 0:
+            interval_begin = datetime.now().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            result = f"🏆 TОП за текущий месяц\n"
+        else:    
+            result = f"🏆 TОП за последние {day_count} дней:\n"
+            interval_begin = datetime.now() - timedelta(days=day_count)
 
-        top = self.Db.GetTop(chat_id, datetime.now() - timedelta(days=day_count), datetime.now())
+        top = self.Db.GetTop(chat_id, interval_begin, datetime.now())
         
         cc = 1
         for item in top:
@@ -328,17 +333,12 @@ class YSDBot:
             return
         self.LastHandledStatCommand = time.time()
 
-        try:
-            day_count = YSDBot.ParseTopParamsAndValidate(update.message.text)
-            stat_message = self.MakeTopBlock(update.effective_chat.id, day_count)
-            #stat_message+= "\n\nДанные по чату: " + YSDBot.MakeChatTitle(update.effective_chat)         
+        
+        day_count = YSDBot.ParseTopParamsAndValidate(update.message.text)
+        stat_message = self.MakeTopBlock(update.effective_chat.id, day_count)
+        #stat_message+= "\n\nДанные по чату: " + YSDBot.MakeChatTitle(update.effective_chat)         
 
-            await update.message.reply_text(stat_message)     
-        except YSDBException as ex:
-            await update.message.reply_text(YSDBot.MakeErrorMessage(ex)) 
-        except BaseException as ex:    
-            logging.error("[TOP] user id "+YSDBot.GetUserTitleForLog(update.effective_user)+", chat id "+YSDBot.GetChatTitleForLog(update.effective_chat) + ", text: "+update.message.text + ". EXCEPTION: "+str(ex))       
-            await update.message.reply_text(YSDBot.MakeExternalErrorMessage(ex))              
+        await update.message.reply_text(stat_message)        
 
     @staticmethod
     def get_help() -> str:
@@ -353,6 +353,7 @@ class YSDBot:
         result +="\n❕ Примеры:"
         result +="\n❕▫️ /top 15"
         result +="\n❕▫️ /top"        
+        result +="\n❕▫️ /top 0 - топ за текущий месяц"
         result +="\n❕ Значение по-умолчанию: 7"
         result +="\n📊 Статистика чата: /stat [<кол-во дней>]"
         result +="\n❕ Значение по-умолчанию: 7"
